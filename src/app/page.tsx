@@ -9,10 +9,41 @@ export default function Home() {
   const [count, setCount] = useState(2)
   const router = useRouter()
 
+  // MDSS weights for each usage scenario
+  const weightsMap: Record<string, Record<string, number>> = {
+    Game: {
+      cpu: 0.25,
+      gpu: 0.35,
+      ram: 0.15,
+      storage: 0.05,
+      screen: 0.10,
+      price: 0.10,
+    },
+    Kerja: {
+      cpu: 0.30,
+      gpu: 0.10,
+      ram: 0.20,
+      storage: 0.15,
+      screen: 0.10,
+      price: 0.15,
+    },
+    Belajar: {
+      cpu: 0.25,
+      gpu: 0.10,
+      ram: 0.20,
+      storage: 0.15,
+      screen: 0.10,
+      price: 0.20,
+    },
+  }
+
   const handleNext = () => {
     if (count < 2 || count > 4) return alert('Minimal 2, maksimal 4 laptop')
     localStorage.setItem('usage', usage)
     localStorage.setItem('count', count.toString())
+    // Save the weights for the selected usage scenario
+    const selectedWeights = weightsMap[usage] || weightsMap['Game']
+    localStorage.setItem('weights', JSON.stringify(selectedWeights))
     router.push('/laptop/1')
   }
 
