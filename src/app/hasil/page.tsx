@@ -12,68 +12,79 @@ export default function ResultPage() {
   useEffect(() => {
     const data = JSON.parse(localStorage.getItem('laptops') || '[]')
     const weights = JSON.parse(localStorage.getItem('weights') || '{}')
-    // Dummy CPU/GPU benchmark data (should match the dropdowns)
-    const cpuBench = [
-      { cpuName: 'AMD Ryzen Threadripper PRO 5995WX', cpuMark: 108822 },
-      { cpuName: 'AMD EPYC 7763', cpuMark: 88338 },
-      { cpuName: 'AMD EPYC 7J13', cpuMark: 86006 },
-      { cpuName: 'AMD EPYC 7713', cpuMark: 85861 },
-    ]
-    const gpuBench = [
-      { gpuName: 'GeForce RTX 3090 Ti', G3Dmark: 29094 },
-      { gpuName: 'GeForce RTX 3080 Ti', G3Dmark: 26887 },
-      { gpuName: 'GeForce RTX 3090', G3Dmark: 26395 },
-      { gpuName: 'Radeon RX 6900 XT', G3Dmark: 25458 },
-    ]
-    // Attach benchmark scores to each laptop
-    const laptops = data.map((l: any) => {
-      const cpu = cpuBench.find(c => c.cpuName === l.cpu)
-      const gpu = gpuBench.find(g => g.gpuName === l.gpu)
-      return {
-        ...l,
-        cpuMark: cpu ? cpu.cpuMark : 0,
-        gpuMark: gpu ? gpu.G3Dmark : 0,
-        ram: parseFloat(l.ram) || 0,
-        storage: parseFloat(l.storage) || 0,
-        screen: parseFloat(l.screen) || 0,
-        price: parseFloat(l.price) || 0,
-      }
-    })
-    // Normalization
-    const getMax = (arr: any[], key: string) => Math.max(...arr.map(l => l[key] || 0))
-    const getMin = (arr: any[], key: string) => Math.min(...arr.map(l => l[key] || 0))
-    const max = {
-      cpuMark: getMax(laptops, 'cpuMark'),
-      gpuMark: getMax(laptops, 'gpuMark'),
-      ram: getMax(laptops, 'ram'),
-      storage: getMax(laptops, 'storage'),
-      screen: getMax(laptops, 'screen'),
-    }
-    const min = {
-      price: getMin(laptops, 'price'),
-    }
-    // Calculate scores
-    const scored = laptops.map((l: any) => {
-      // Benefit: normalized = value / max
-      // Cost: normalized = min / value
-      const norm: Record<string, number> = {
-        cpu: max.cpuMark ? l.cpuMark / max.cpuMark : 0,
-        gpu: max.gpuMark ? l.gpuMark / max.gpuMark : 0,
-        ram: max.ram ? l.ram / max.ram : 0,
-        storage: max.storage ? l.storage / max.storage : 0,
-        screen: max.screen ? l.screen / max.screen : 0,
-        price: l.price > 0 ? min.price / l.price : 0, // cost
-      }
-      let score = 0;
-      (Object.keys(weights) as Array<keyof typeof norm>).forEach((k: keyof typeof norm) => {
-        score += (norm[k] || 0) * (weights[k] || 0)
+    // Fetch CPU and GPU benchmark data from API
+    fetch('/api/cpu-gpu-data')
+      .then(res => res.json())
+      .then(apiData => {
+        const cpuBench = apiData.cpu
+        const gpuBench = apiData.gpu
+        // Dummy CPU/GPU benchmark data (should match the dropdowns)
+        /*
+        const cpuBench = [
+          { cpuName: 'AMD Ryzen Threadripper PRO 5995WX', cpuMark: 108822 },
+          { cpuName: 'AMD EPYC 7763', cpuMark: 88338 },
+          { cpuName: 'AMD EPYC 7J13', cpuMark: 86006 },
+          { cpuName: 'AMD EPYC 7713', cpuMark: 85861 },
+        ]
+        const gpuBench = [
+          { gpuName: 'GeForce RTX 3090 Ti', G3Dmark: 29094 },
+          { gpuName: 'GeForce RTX 3080 Ti', G3Dmark: 26887 },
+          { gpuName: 'GeForce RTX 3090', G3Dmark: 26395 },
+          { gpuName: 'Radeon RX 6900 XT', G3Dmark: 25458 },
+        ]
+        */
+        // Attach benchmark scores to each laptop
+        const laptops = data.map((l: any) => {
+          const cpu = cpuBench.find((c: any) => c.cpuName === l.cpu)
+          const gpu = gpuBench.find((g: any) => g.gpuName === l.gpu)
+          return {
+            ...l,
+            cpuMark: cpu ? parseFloat(cpu.cpuMark) : 0,
+            gpuMark: gpu ? parseFloat(gpu.G3Dmark) : 0,
+            ram: parseFloat(l.ram) || 0,
+            storage: parseFloat(l.storage) || 0,
+            screen: parseFloat(l.screen) || 0,
+            price: parseFloat(l.price) || 0,
+          }
+        })
+        // Normalization
+        const getMax = (arr: any[], key: string) => Math.max(...arr.map(l => l[key] || 0))
+        const getMin = (arr: any[], key: string) => Math.min(...arr.map(l => l[key] || 0))
+        const max = {
+          cpuMark: getMax(laptops, 'cpuMark'),
+          gpuMark: getMax(laptops, 'gpuMark'),
+          ram: getMax(laptops, 'ram'),
+          storage: getMax(laptops, 'storage'),
+          screen: getMax(laptops, 'screen'),
+        }
+        const min = {
+          price: getMin(laptops, 'price'),
+        }
+        // Calculate scores
+        const scored = laptops.map((l: any) => {
+          // Benefit: normalized = value / max
+          // Cost: normalized = min / value
+          const norm: Record<string, number> = {
+            cpu: max.cpuMark ? l.cpuMark / max.cpuMark : 0,
+            gpu: max.gpuMark ? l.gpuMark / max.gpuMark : 0,
+            ram: max.ram ? l.ram / max.ram : 0,
+            storage: max.storage ? l.storage / max.storage : 0,
+            screen: max.screen ? l.screen / max.screen : 0,
+            price: l.price > 0 ? min.price / l.price : 0, // cost
+          }
+          let score = 0;
+          (Object.keys(weights) as Array<keyof typeof norm>).forEach((k: keyof typeof norm) => {
+            score += (norm[k] || 0) * (weights[k] || 0)
+          })
+          // Debug: log calculation for each laptop
+          console.log('Laptop:', l.name, 'Norm:', norm, 'Score:', score)
+          return { ...l, score }
+        })
+        // Sort by score descending
+        scored.sort((a: any, b: any) => b.score - a.score)
+        setRanking(scored)
+        setResult(scored[0])
       })
-      return { ...l, score }
-    })
-    // Sort by score descending
-    scored.sort((a: any, b: any) => b.score - a.score)
-    setRanking(scored)
-    setResult(scored[0])
   }, [])
 
   if (!result) return null
@@ -93,7 +104,6 @@ export default function ResultPage() {
         <li><strong>Storage:</strong> {result.storage} GB</li>
         <li><strong>Layar:</strong> {result.screen} inch</li>
         <li><strong>Harga:</strong> Rp {result.price}</li>
-        <li><strong>Skor Akhir:</strong> {result.score ? result.score.toFixed(4) : '-'}</li>
       </ul>
       <button
         onClick={handleBack}
