@@ -103,7 +103,7 @@ export default function ResultPage() {
         <li><strong>RAM:</strong> {result.ram} GB</li>
         <li><strong>Storage:</strong> {result.storage} GB</li>
         <li><strong>Layar:</strong> {result.screen} inch</li>
-        <li><strong>Harga:</strong> Rp {result.price}</li>
+        <li><strong>Harga:</strong> {Number(result.price).toLocaleString('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })}</li>
       </ul>
       <button
         onClick={handleBack}
